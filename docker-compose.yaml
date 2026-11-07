@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:18
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:9091:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - db
+  
+  migrator:
+    build:
+      context: ./db
+      dockerfile: Dockerfile.migrator
+    profiles: ["tools"]
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      PGDATABASE: ${POSTGRES_DB:?POSTGRES_DB is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - db
+
+volumes:
+  postgres_data:
+
+networks:
+  db:
