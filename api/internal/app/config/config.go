@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	Env            string         `yaml:"env" env-default:"local"`
-	APIConfig      APIConfig      `yaml:"api" env-required:"true"`
-	PostgresConfig PostgresConfig `yaml:"postgres" env-required:"true"`
+	Env       string         `yaml:"env" env-default:"local"`
+	APIConfig APIConfig      `yaml:"api" env-required:"true"`
+	DB        PostgresConfig `yaml:"postgres" env-required:"true"`
 }
 
 type APIConfig struct {
