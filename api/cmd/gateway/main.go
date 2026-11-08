@@ -10,6 +10,7 @@ import (
 	apphttp "github.com/ArthurMilligan/charlie/api/internal/app/http"
 	"github.com/ArthurMilligan/charlie/api/internal/app/services"
 	"github.com/ArthurMilligan/charlie/api/internal/app/storage"
+	"github.com/ArthurMilligan/charlie/api/internal/telegram"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -44,6 +45,10 @@ func main() {
 	messagesService := services.NewMessagesService(messagesStorage)
 
 	handler := apphttp.NewHttpServer(messagesService)
+
+	go func() {
+		telegram.NewTelegramConnection(messagesService, conf.TelegramBotToken)
+	}()
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", conf.APIConfig.Port),
