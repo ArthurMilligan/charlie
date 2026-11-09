@@ -3,14 +3,15 @@ package telegram
 import (
 	"context"
 
+	gptInterfaces "github.com/ArthurMilligan/charlie/api/internal/ai/domain/interfaces"
 	"github.com/ArthurMilligan/charlie/api/internal/app/domain/interfaces"
 	"github.com/ArthurMilligan/charlie/api/internal/telegram/handlers"
 	"github.com/go-telegram/bot"
 )
 
-func NewTelegramConnection(m interfaces.MessagesService, token string) {
+func ServeTelegramConnection(m interfaces.MessagesService, n interfaces.NotesService, token string, g gptInterfaces.GPTClient) {
 	opts := []bot.Option{
-		bot.WithDefaultHandler(handlers.GetMessageHandler(m)),
+		bot.WithDefaultHandler(handlers.GetMessageHandler(m, n, g)),
 	}
 
 	b, err := bot.New(token, opts...)
