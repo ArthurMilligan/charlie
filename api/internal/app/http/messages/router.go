@@ -6,6 +6,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewAuthRouter(r chi.Router, m interfaces.MessagesService) {
+func NewMessagesRouter(r chi.Router, m interfaces.MessagesService) {
 	r.Post("/add", messagesHandlers.AddMessage(m))
 }

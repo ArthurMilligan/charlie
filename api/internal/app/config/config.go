@@ -13,6 +13,7 @@ type Config struct {
 	APIConfig        APIConfig      `yaml:"api" env-required:"true"`
 	DB               PostgresConfig `yaml:"postgres" env-required:"true"`
 	TelegramBotToken string         `yaml:"tg_bot_token" env-required:"true"`
+	GPTToken         string         `yaml:"gpt_token" env-required:"true"`
 }
 
 type APIConfig struct {

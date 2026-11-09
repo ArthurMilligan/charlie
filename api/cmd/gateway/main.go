@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ArthurMilligan/charlie/api/internal/ai"
 	"github.com/ArthurMilligan/charlie/api/internal/app/config"
 	apphttp "github.com/ArthurMilligan/charlie/api/internal/app/http"
 	"github.com/ArthurMilligan/charlie/api/internal/app/services"
@@ -41,13 +42,17 @@ func main() {
 	}
 
 	messagesStorage := storage.NewMessagesStorage(db)
+	notesStorage := storage.NewNotesStorage(db)
 
 	messagesService := services.NewMessagesService(messagesStorage)
+	notesService := services.NewNotesService(notesStorage)
 
-	handler := apphttp.NewHttpServer(messagesService)
+	handler := apphttp.NewHttpServer(messagesService, notesService)
+
+	GPTClient := ai.NewGPTClient(conf.GPTToken, notesService)
 
 	go func() {
-		telegram.NewTelegramConnection(messagesService, conf.TelegramBotToken)
+		telegram.ServeTelegramConnection(messagesService, notesService, conf.TelegramBotToken, GPTClient)
 	}()
 
 	server := &http.Server{

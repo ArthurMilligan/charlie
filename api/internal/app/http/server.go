@@ -6,10 +6,11 @@ import (
 
 	"github.com/ArthurMilligan/charlie/api/internal/app/domain/interfaces"
 	"github.com/ArthurMilligan/charlie/api/internal/app/http/messages"
+	"github.com/ArthurMilligan/charlie/api/internal/app/http/notes"
 	"github.com/go-chi/chi/v5"
 )
 
-func NewHttpServer(m interfaces.MessagesService) nethttp.Handler {
+func NewHttpServer(m interfaces.MessagesService, n interfaces.NotesService) nethttp.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -21,7 +22,11 @@ func NewHttpServer(m interfaces.MessagesService) nethttp.Handler {
 	})
 
 	r.Route("/messages", func(r chi.Router) {
-		messages.NewAuthRouter(r, m)
+		messages.NewMessagesRouter(r, m)
+	})
+
+	r.Route("/notes", func(r chi.Router) {
+		notes.NewNotesRouter(r, n)
 	})
 
 	return r
