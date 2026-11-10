@@ -13,14 +13,15 @@ import (
 type GPTClient struct {
 	client       *openai.Client
 	notesService interfaces.NotesService
+	tasksService interfaces.TasksService
 }
 
-func NewGPTClient(token string, n interfaces.NotesService) *GPTClient {
+func NewGPTClient(token string, n interfaces.NotesService, t interfaces.TasksService) *GPTClient {
 	client := openai.NewClient(
 		option.WithAPIKey(token), // defaults to os.LookupEnv("OPENAI_API_KEY")
 	)
 
-	return &GPTClient{client: &client, notesService: n}
+	return &GPTClient{client: &client, notesService: n, tasksService: t}
 }
 
 func (c *GPTClient) GetAnswer(ctx context.Context, text string, messageID uint32) (string, error) {
@@ -44,6 +45,7 @@ func (c *GPTClient) GetAnswer(ctx context.Context, text string, messageID uint32
 			resp, toolErr := tools.UseTools(
 				ctx,
 				c.notesService,
+				c.tasksService,
 				call.Name,
 				call.Arguments,
 				messageID,

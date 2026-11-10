@@ -43,13 +43,15 @@ func main() {
 
 	messagesStorage := storage.NewMessagesStorage(db)
 	notesStorage := storage.NewNotesStorage(db)
+	tasksStorage := storage.NewTasksStorage(db)
 
 	messagesService := services.NewMessagesService(messagesStorage)
 	notesService := services.NewNotesService(notesStorage)
+	tasksService := services.NewTasksService(tasksStorage)
 
-	handler := apphttp.NewHttpServer(messagesService, notesService)
+	handler := apphttp.NewHttpServer(messagesService, notesService, tasksService)
 
-	GPTClient := ai.NewGPTClient(conf.GPTToken, notesService)
+	GPTClient := ai.NewGPTClient(conf.GPTToken, notesService, tasksService)
 
 	go func() {
 		telegram.ServeTelegramConnection(messagesService, notesService, conf.TelegramBotToken, GPTClient)
