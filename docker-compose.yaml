@@ -33,9 +33,40 @@ services:
     restart: "no"
     networks:
       - db
+  
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    command:
+      - redis-server
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    networks:
+      - redis
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5540:5540"
+    volumes:
+      - redisinsight_data:/data
+    networks:
+      - redis
+ 
 
 volumes:
   postgres_data:
+  redisinsight_data:
 
 networks:
   db:
+  redis:
