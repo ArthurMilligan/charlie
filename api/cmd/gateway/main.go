@@ -12,6 +12,7 @@ import (
 	"github.com/ArthurMilligan/charlie/api/internal/app/services"
 	"github.com/ArthurMilligan/charlie/api/internal/app/storage"
 	"github.com/ArthurMilligan/charlie/api/internal/telegram"
+	"github.com/ArthurMilligan/charlie/api/internal/workers"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -44,17 +45,29 @@ func main() {
 	messagesStorage := storage.NewMessagesStorage(db)
 	notesStorage := storage.NewNotesStorage(db)
 	tasksStorage := storage.NewTasksStorage(db)
+	remindersStorage := storage.NewRemindersStorage(db)
 
 	messagesService := services.NewMessagesService(messagesStorage)
 	notesService := services.NewNotesService(notesStorage)
 	tasksService := services.NewTasksService(tasksStorage)
+	remindersService := services.NewRemindersService(remindersStorage)
 
-	handler := apphttp.NewHttpServer(messagesService, notesService, tasksService)
+	handler := apphttp.NewHttpServer(messagesService, notesService, tasksService, remindersService)
 
-	GPTClient := ai.NewGPTClient(conf.GPTToken, notesService, tasksService)
+	GPTClient := ai.NewGPTClient(conf.GPTToken, notesService, tasksService, remindersService)
+
+	telegramBot, err := telegram.GetTelegramBot(messagesService, notesService, conf.TelegramBotToken, GPTClient)
+
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
-		telegram.ServeTelegramConnection(messagesService, notesService, conf.TelegramBotToken, GPTClient)
+		telegramBot.Start(context.TODO())
+	}()
+
+	go func() {
+		workers.RunRemindersWorker(ctx, remindersService, telegramBot, GPTClient)
 	}()
 
 	server := &http.Server{

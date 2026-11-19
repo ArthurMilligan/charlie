@@ -41,7 +41,7 @@ func GetMessageHandler(m interfaces.MessagesService, n interfaces.NotesService, 
 			return
 		}
 
-		answer, err := g.GetAnswer(ctx, update.Message.Text, savedMessageID)
+		answer, err := g.GetAnswer(ctx, update.Message.Text, savedMessageID, msg.From.ID)
 
 		fmt.Print(err)
 

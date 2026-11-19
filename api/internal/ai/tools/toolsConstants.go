@@ -12,6 +12,7 @@ const (
 	UnknownToolError            = "Error. Unknown tool"
 	AddNoteSuccess              = "Заметка успешно сохранена"
 	AddTaskSuccess              = "Задача успешно создана"
+	AddReminderSuccess          = "Напоминание успешно добавлено"
 )
 
 var Tools = []responses.ToolUnionParam{
@@ -144,6 +145,86 @@ var Tools = []responses.ToolUnionParam{
 					},
 				},
 				"required":             []string{"status"},
+				"additionalProperties": false,
+			},
+		},
+	},
+	{
+		OfFunction: &responses.FunctionToolParam{
+			Name: "add_reminder",
+			Description: openai.String(
+				"Создать напоминание по явной просьбе пользователя. " +
+					"Если дата или время неоднозначны, сначала уточни их. " +
+					"Не выдумывай идентификатор задачи.",
+			),
+			Strict: openai.Bool(true),
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"task_id": map[string]any{
+						"type": []string{"integer", "null"},
+						"description": "ID существующей связанной задачи. " +
+							"Если задача неизвестна — null.",
+					},
+					"title": map[string]any{
+						"type":        "string",
+						"description": "Краткое содержание напоминания.",
+					},
+					"description": map[string]any{
+						"type": []string{"string", "null"},
+						"description": "Дополнительные детали напоминания. " +
+							"Если деталей нет — null.",
+					},
+					"recurrence_type": map[string]any{
+						"type": []string{"string", "null"},
+						"enum": []any{
+							"once",
+							"daily",
+							"weekly",
+							"monthly",
+							"yearly",
+							nil,
+						},
+						"description": "Тип повторения. " +
+							"Для разового напоминания — once.",
+					},
+					"timezone": map[string]any{
+						"type": "string",
+						"description": "Часовой пояс IANA, например Europe/Moscow. " +
+							"Используй часовой пояс из контекста приложения.",
+					},
+					"local_time": map[string]any{
+						"type": "string",
+						"description": "Локальные дата и время отправки в формате RFC3339, " +
+							"например 2026-11-20T16:00:00+03:00.",
+					},
+					"start_date": map[string]any{
+						"type": "string",
+						"description": "Дата начала расписания в формате RFC3339, " +
+							"например 2026-11-20T00:00:00+03:00.",
+					},
+					"end_date": map[string]any{
+						"type": []string{"string", "null"},
+						"description": "Дата окончания повторения в формате RFC3339. " +
+							"Если дата окончания не указана — null.",
+					},
+					"next_remind_at": map[string]any{
+						"type": "string",
+						"description": "Ближайший момент отправки напоминания " +
+							"в формате RFC3339 с часовым поясом.",
+					},
+				},
+				"required": []string{
+					"task_id",
+					"title",
+					"description",
+					"recurrence_type",
+					"timezone",
+					"local_time",
+					"start_date",
+					"end_date",
+					"next_remind_at",
+				},
 				"additionalProperties": false,
 			},
 		},
