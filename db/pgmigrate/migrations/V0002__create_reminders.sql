@@ -8,15 +8,17 @@ CREATE TABLE
             recurrence_type IN ('once', 'daily', 'weekly', 'monthly', 'yearly')
         ),
         timezone text NOT NULL,
+        chat_id BIGINT NOT NULL,
         local_time time NOT NULL,
         start_date date NOT NULL,
         end_date date,
-        -- Ближайший момент отправки.
-        next_remind_at timestamptz NOT NULL,
+        -- Next scheduled reminder time.       
+        next_remind_at timestamptz,
         status text NOT NULL DEFAULT 'active' CHECK (
             status IN ('active', 'paused', 'completed', 'cancelled')
         ),
         created_at timestamptz NOT NULL DEFAULT now (),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW (),
         CHECK (
             end_date IS NULL
             OR end_date >= start_date

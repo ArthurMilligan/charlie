@@ -7,11 +7,12 @@ import (
 	"github.com/ArthurMilligan/charlie/api/internal/app/domain/interfaces"
 	"github.com/ArthurMilligan/charlie/api/internal/app/http/messages"
 	"github.com/ArthurMilligan/charlie/api/internal/app/http/notes"
+	"github.com/ArthurMilligan/charlie/api/internal/app/http/reminders"
 	"github.com/ArthurMilligan/charlie/api/internal/app/http/tasks"
 	"github.com/go-chi/chi/v5"
 )
 
-func NewHttpServer(m interfaces.MessagesService, n interfaces.NotesService, t interfaces.TasksService) nethttp.Handler {
+func NewHttpServer(m interfaces.MessagesService, n interfaces.NotesService, t interfaces.TasksService, re interfaces.RemindersService) nethttp.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w nethttp.ResponseWriter, r *nethttp.Request) {
@@ -32,6 +33,10 @@ func NewHttpServer(m interfaces.MessagesService, n interfaces.NotesService, t in
 
 	r.Route("/tasks", func(r chi.Router) {
 		tasks.NewTasksRouter(r, t)
+	})
+
+	r.Route("/reminders", func(r chi.Router) {
+		reminders.NewRemindersRouter(r, re)
 	})
 
 	return r

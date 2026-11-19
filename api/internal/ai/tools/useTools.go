@@ -10,7 +10,7 @@ import (
 	"github.com/ArthurMilligan/charlie/api/internal/app/domain/models"
 )
 
-func UseTools(ctx context.Context, n interfaces.NotesService, t interfaces.TasksService, toolName string, args string, messageID uint32) (string, error) {
+func UseTools(ctx context.Context, n interfaces.NotesService, t interfaces.TasksService, r interfaces.RemindersService, toolName string, args string, messageID uint32, chatID int64) (string, error) {
 	switch toolName {
 	case "add_note":
 		var msg struct {
@@ -38,6 +38,30 @@ func UseTools(ctx context.Context, n interfaces.NotesService, t interfaces.Tasks
 			return UnknownToolError, err
 		}
 		return string(notesJSON), nil
+	case "add_reminder":
+		var msg struct {
+			TaskID         *uint32                `json:"task_id"`
+			Title          string                 `json:"title"`
+			Description    *string                `json:"description"`
+			RecurrenceType *models.RecurrenceType `json:"recurrence_type"`
+			Timezone       string                 `json:"timezone"`
+			LocalTime      time.Time              `json:"local_time"`
+			StartDate      time.Time              `json:"start_date"`
+			EndDate        *time.Time             `json:"end_date"`
+			NextRemindAt   time.Time              `json:"next_remind_at"`
+			Status         *models.RemindStatus   `json:"status"`
+		}
+		if err := json.Unmarshal([]byte(args), &msg); err != nil {
+			fmt.Println("Ошибка разбора JSON:", err)
+			return UnknownToolError, err
+		}
+
+		_, err := r.AddRemind(ctx, msg.TaskID, msg.Title, msg.Description, msg.RecurrenceType, msg.Timezone, uint32(chatID), msg.LocalTime, msg.StartDate, msg.EndDate, msg.NextRemindAt, msg.Status)
+		if err != nil {
+			return UnknownToolError, err
+		}
+		return AddReminderSuccess, nil
+
 	case "add_task":
 		var msg struct {
 			Title           string     `json:"title"`
@@ -56,11 +80,11 @@ func UseTools(ctx context.Context, n interfaces.NotesService, t interfaces.Tasks
 			return UnknownToolError, err
 		}
 
-		_, err := t.AddTask(ctx, msg.Title, msg.Description, messageID, msg.Status, msg.PlanedOn, msg.PlannedTime, msg.DurationMinutes, msg.DueOn, msg.DueAt, msg.CompletedAt)
+		taskID, err := t.AddTask(ctx, msg.Title, msg.Description, messageID, msg.Status, msg.PlanedOn, msg.PlannedTime, msg.DurationMinutes, msg.DueOn, msg.DueAt, msg.CompletedAt)
 		if err != nil {
 			return UnknownToolError, err
 		}
-		return AddTaskSuccess, nil
+		return fmt.Sprintf(`{"success":true,"task_id":%d}`, taskID), nil
 	case "get_tasks":
 		var msg struct {
 			Status *models.TaskStatus `json:"status"`
