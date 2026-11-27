@@ -8,11 +8,12 @@ import (
 )
 
 type Notes struct {
-	NotesStorage interfaces.NotesStorage
+	NotesStorage    interfaces.NotesStorage
+	MemoriesService interfaces.MemoriesService
 }
 
-func NewNotesService(NotesStorage interfaces.NotesStorage) *Notes {
-	return &Notes{NotesStorage: NotesStorage}
+func NewNotesService(NotesStorage interfaces.NotesStorage, m interfaces.MemoriesService) *Notes {
+	return &Notes{NotesStorage: NotesStorage, MemoriesService: m}
 }
 
 func (m *Notes) AddNote(ctx context.Context, content string, sourceMessageID uint32) (noteID uint32, err error) {
@@ -26,6 +27,12 @@ func (m *Notes) AddNote(ctx context.Context, content string, sourceMessageID uin
 	}
 
 	noteID, err = m.NotesStorage.AddNote(ctx, note)
+
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = m.MemoriesService.AddMemories(ctx, 554822003, models.MemorySourceTypeNote, noteID, content)
 
 	if err != nil {
 		return 0, err

@@ -31,6 +31,18 @@ type DBTask struct {
 	UpdatedAt       time.Time
 }
 
+type TaskPatch struct {
+	Title           *string
+	Status          *TaskStatus
+	Description     PatchField[string]
+	PlannedOn       PatchField[time.Time]
+	PlannedTime     PatchField[time.Time]
+	DurationMinutes PatchField[int]
+	DueOn           PatchField[time.Time]
+	DueAt           PatchField[time.Time]
+	CompletedAt     *time.Time
+}
+
 type TaskStatus string
 
 const (
@@ -42,4 +54,9 @@ const (
 
 type TaskFilter struct {
 	Status *TaskStatus
+}
+
+type PatchField[T any] struct {
+	Set   bool
+	Value *T
 }

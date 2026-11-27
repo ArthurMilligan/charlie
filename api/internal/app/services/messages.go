@@ -14,10 +14,11 @@ var (
 
 type Messages struct {
 	MessagesStorage interfaces.MessagesStorage
+	MemoriesService interfaces.MemoriesService
 }
 
-func NewMessagesService(MessagesStorage interfaces.MessagesStorage) *Messages {
-	return &Messages{MessagesStorage: MessagesStorage}
+func NewMessagesService(MessagesStorage interfaces.MessagesStorage, m interfaces.MemoriesService) *Messages {
+	return &Messages{MessagesStorage: MessagesStorage, MemoriesService: m}
 }
 
 func (m *Messages) AddMessage(ctx context.Context, content string, direction string, source string, externalMessageID *uint32) (messageID uint32, err error) {
@@ -42,5 +43,21 @@ func (m *Messages) AddMessage(ctx context.Context, content string, direction str
 		return 0, err
 	}
 
+	_, err = m.MemoriesService.AddMemories(ctx, 554822003, models.MemorySourceTypeChat, messageID, content)
+
+	if err != nil {
+		return 0, err
+	}
+
 	return messageID, nil
+}
+
+func (m *Messages) GetLastMessages(ctx context.Context, id uint32) ([]models.DBMessage, error) {
+	notes, err := m.MessagesStorage.GetLastMessages(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return notes, nil
 }

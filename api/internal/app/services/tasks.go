@@ -52,3 +52,13 @@ func (m *Tasks) GetTasks(ctx context.Context, status *models.TaskStatus) ([]mode
 
 	return tasks, nil
 }
+
+func (m *Tasks) UpdateTaskByID(ctx context.Context, taskID uint32, task models.TaskPatch) (uint32, error) {
+	updatedTaskID, err := m.TasksStorage.UpdateTaskByID(ctx, taskID, task)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return updatedTaskID, nil
+}

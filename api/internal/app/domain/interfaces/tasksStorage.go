@@ -9,4 +9,5 @@ import (
 type TasksStorage interface {
 	AddTask(ctx context.Context, task models.Task) (uint32, error)
 	GetTasks(ctx context.Context, filter models.TaskFilter) ([]models.DBTask, error)
+	UpdateTaskByID(ctx context.Context, taskID uint32, task models.TaskPatch) (uint32, error)
 }

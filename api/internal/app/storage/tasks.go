@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ArthurMilligan/charlie/api/internal/app/domain/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -139,4 +140,55 @@ func (c *TasksStorage) GetTasks(ctx context.Context, filter models.TaskFilter) (
 	}
 
 	return tasks, nil
+}
+
+func (c *TasksStorage) UpdateTaskByID(ctx context.Context, taskID uint32, task models.TaskPatch) (uint32, error) {
+	const query = `
+   	UPDATE tasks
+	SET
+		title            = COALESCE(@title, title),
+		status           = COALESCE(@status, status),
+		description      = CASE WHEN @set_description      THEN @description      ELSE description END,
+		planned_on       = CASE WHEN @set_planned_on       THEN @planned_on       ELSE planned_on END,
+		planned_time     = CASE WHEN @set_planned_time     THEN @planned_time     ELSE planned_time END,
+		duration_minutes = CASE WHEN @set_duration_minutes THEN @duration_minutes ELSE duration_minutes END,
+		due_on           = CASE WHEN @set_due_on           THEN @due_on           ELSE due_on END,
+		due_at           = CASE WHEN @set_due_at           THEN @due_at           ELSE due_at END,
+		completed_at = CASE
+			   	WHEN @status = 'done' THEN COALESCE(@completed_at::timestamptz, now())
+				WHEN @status IS NULL THEN completed_at
+				ELSE NULL
+		END,
+		updated_at = now ()
+	WHERE id = @id
+	RETURNING id;
+`
+
+	args := pgx.StrictNamedArgs{
+		"id":                   taskID,
+		"title":                task.Title,
+		"status":               task.Status,
+		"set_description":      task.Description.Set,
+		"description":          task.Description.Value,
+		"planned_on":           task.PlannedOn.Value,
+		"set_planned_on":       task.PlannedOn.Set,
+		"planned_time":         task.PlannedTime.Value,
+		"set_planned_time":     task.PlannedTime.Set,
+		"duration_minutes":     task.DurationMinutes.Value,
+		"set_duration_minutes": task.DurationMinutes.Set,
+		"due_on":               task.DueOn.Value,
+		"set_due_on":           task.DueOn.Set,
+		"due_at":               task.DueAt.Value,
+		"set_due_at":           task.DueAt.Set,
+		"completed_at":         task.CompletedAt,
+	}
+
+	var updatedID uint32
+	err := c.db.QueryRow(ctx, query, args).Scan(&updatedID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return updatedID, nil
 }

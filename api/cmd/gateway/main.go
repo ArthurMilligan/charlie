@@ -42,21 +42,48 @@ func main() {
 		panic(err)
 	}
 
+	memoriesSrotage := storage.NewMemoriesStorage(db)
+
 	messagesStorage := storage.NewMessagesStorage(db)
 	notesStorage := storage.NewNotesStorage(db)
 	tasksStorage := storage.NewTasksStorage(db)
 	remindersStorage := storage.NewRemindersStorage(db)
+	profilesStorage := storage.NewProfilesStorage(db)
 
-	messagesService := services.NewMessagesService(messagesStorage)
-	notesService := services.NewNotesService(notesStorage)
+	memoriesService, err := services.NewMemoriesService(memoriesSrotage, conf.GPTToken)
+	if err != nil {
+		panic(err)
+	}
+
+	messagesService := services.NewMessagesService(messagesStorage, memoriesService)
+	notesService := services.NewNotesService(notesStorage, memoriesService)
 	tasksService := services.NewTasksService(tasksStorage)
 	remindersService := services.NewRemindersService(remindersStorage)
+	profilesService := services.NewProfileService(profilesStorage)
 
-	handler := apphttp.NewHttpServer(messagesService, notesService, tasksService, remindersService)
+	handler := apphttp.NewHttpServer(
+		messagesService,
+		notesService,
+		tasksService,
+		remindersService,
+	)
 
-	GPTClient := ai.NewGPTClient(conf.GPTToken, notesService, tasksService, remindersService)
+	GPTClient := ai.NewGPTClient(
+		conf.GPTToken,
+		notesService,
+		tasksService,
+		remindersService,
+		memoriesService,
+		messagesService,
+		profilesService,
+	)
 
-	telegramBot, err := telegram.GetTelegramBot(messagesService, notesService, conf.TelegramBotToken, GPTClient)
+	telegramBot, err := telegram.GetTelegramBot(
+		messagesService,
+		notesService,
+		conf.TelegramBotToken,
+		GPTClient,
+	)
 
 	if err != nil {
 		panic(err)

@@ -10,4 +10,5 @@ import (
 type TasksService interface {
 	AddTask(ctx context.Context, title string, description *string, sourceMessageID uint32, status *string, plannedOn *time.Time, PlannedTime *time.Time, durationMinutes *int, dueOn *time.Time, dueAt *time.Time, completedAt *time.Time) (taskID uint32, err error)
 	GetTasks(ctx context.Context, status *models.TaskStatus) ([]models.DBTask, error)
+	UpdateTaskByID(ctx context.Context, taskID uint32, task models.TaskPatch) (uint32, error)
 }

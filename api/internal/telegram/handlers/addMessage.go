@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+	"log"
+	"strings"
+	"unicode"
 
 	gptInterfaces "github.com/ArthurMilligan/charlie/api/internal/ai/domain/interfaces"
 	"github.com/ArthurMilligan/charlie/api/internal/app/domain/interfaces"
@@ -17,6 +19,19 @@ func GetMessageHandler(m interfaces.MessagesService, n interfaces.NotesService, 
 		msg := update.Message
 
 		if msg.Chat.Type != "private" {
+			return
+		}
+
+		_, typingErr := b.SendChatAction(ctx, &bot.SendChatActionParams{
+			ChatID: msg.Chat.ID,
+			Action: models.ChatActionTyping,
+		})
+
+		if typingErr != nil {
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "Ошибка(",
+			})
 			return
 		}
 
@@ -43,17 +58,6 @@ func GetMessageHandler(m interfaces.MessagesService, n interfaces.NotesService, 
 
 		answer, err := g.GetAnswer(ctx, update.Message.Text, savedMessageID, msg.From.ID)
 
-		fmt.Print(err)
-
-		if err != nil {
-			b.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID: update.Message.Chat.ID,
-				Text:   "Ошибка(",
-			})
-			return
-		}
-		_, err = m.AddMessage(ctx, answer, "output", "telegram", &telegramMessageID)
-
 		if err != nil {
 			b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: update.Message.Chat.ID,
@@ -62,9 +66,74 @@ func GetMessageHandler(m interfaces.MessagesService, n interfaces.NotesService, 
 			return
 		}
 
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: update.Message.Chat.ID,
-			Text:   answer,
-		})
+		for i, part := range splitTelegramText(answer) {
+			_, err = m.AddMessage(ctx, part, "output", "telegram", &telegramMessageID)
+
+			if err != nil {
+				b.SendMessage(ctx, &bot.SendMessageParams{
+					ChatID: update.Message.Chat.ID,
+					Text:   "Ошибка(",
+				})
+				return
+			}
+
+			_, err := b.SendRichMessage(ctx, &bot.SendRichMessageParams{
+				ChatID: msg.Chat.ID,
+				RichMessage: models.InputRichMessage{
+					Markdown: part,
+				},
+			})
+
+			if err != nil {
+				log.Printf("telegram: failed to send part %d of reply to message %d (%T)",
+					i+1, telegramMessageID, err)
+				return
+			}
+		}
 	}
+}
+
+func splitTelegramText(text string) []string {
+	const limit = 3900
+
+	remaining := []rune(strings.TrimSpace(text))
+	var parts []string
+
+	for len(remaining) > 0 {
+		end, size := 0, 0
+
+		for end < len(remaining) {
+			width := 1
+			if remaining[end] > 0xFFFF {
+				width = 2 // Запас для эмодзи и других символов вне BMP.
+			}
+			if size+width > limit {
+				break
+			}
+			size += width
+			end++
+		}
+
+		if end < len(remaining) {
+			cut := end
+			for i := end; i > end/2; i-- {
+				if remaining[i-1] == '\n' && remaining[i] == '\n' {
+					cut = i
+					break
+				}
+				if cut == end && unicode.IsSpace(remaining[i]) {
+					cut = i
+				}
+			}
+			end = cut
+		}
+
+		part := strings.TrimSpace(string(remaining[:end]))
+		if part != "" {
+			parts = append(parts, part)
+		}
+		remaining = remaining[end:]
+	}
+
+	return parts
 }
